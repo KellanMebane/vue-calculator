@@ -1,7 +1,7 @@
 <template>
   <div class="calculator">
-    <div class="display">{{current}}</div>
-    <a @click="clear" class="btn">C</a>
+    <div class="display">{{left + operator + right}}</div>
+    <a @click="clear('0')" class="btn">C</a>
     <a @click="sign" class="btn">+/-</a>
     <a @click="percent" class="btn">%</a>
     <a @click="op('÷')" class="btn operator">÷</a>
@@ -17,96 +17,108 @@
     <a @click="append(2)" class="btn">2</a>
     <a @click="append(3)" class="btn">3</a>
     <a @click="op('+')" class="btn operator">+</a>
-    <a @click="addZero()" class="btn zero">0</a>
+    <a @click="append(0)" class="btn zero">0</a>
     <a @click="dot" class="btn">.</a>
-    <a @click="evaluate" class="btn operator">=</a>
+    <a @click="evaluate()" class="btn operator">=</a>
   </div>
 </template>
 
 <script>
 /* eslint-disable */
 
-// [TODO] second number can't have decimals yet
-// [TODO] sign will be read as an operator currently
-
 export default {
   name: "Calculator",
+
   data() {
     return {
-      current: "0",
+      left: "0",
+      right: "",
       operator: "",
-      done: false
+      on: false
     };
   },
+
   methods: {
-    clear() {
-      this.current = "0";
+    clear(left) {
+      this.left = left;
+      this.right = "";
       this.operator = "";
-      this.done = "";
+      this.on = false; // on being true means we are operating on the right hand side
     },
 
     sign() {
-      this.current =
-        this.current.charAt(0) === "-"
-          ? this.current.slice(1)
-          : `-${this.current}`;
+      let current = this.on ? this.right : this.left;
+      current = current.charAt(0) === "-" ? current.slice(1) : `-${current}`;
+
+      if (this.on) {
+        this.right = current;
+      } else {
+        this.left = current;
+      }
     },
 
     percent() {
-      this.current = `${parseFloat(this.current) / 100}`;
+      if (this.on) {
+        this.right = `${parseFloat(this.right) / 100}`;
+        //if (this.rigt == 'NaN')
+      } else {
+        this.left = `${parseFloat(this.left) / 100}`;
+      }
     },
 
     append(number) {
-      if (this.current === "0" && number != ".") {
-        this.current = `${number}`;
-      } else if (this.done && this.operator.length != 1 && number != ".") {
-        this.current = `${number}`;
+      let current = this.on ? this.right : this.left;
+
+      if (current === "0" && number != ".") {
+        current = `${number}`;
       } else {
-        this.current = `${this.current + number}`;
+        current = `${current + number}`;
       }
 
-      this.done = false;
+      if (this.on) {
+        this.right = current;
+      } else {
+        this.left = current;
+      }
     },
 
     dot() {
-      this.current.indexOf(".") === -1 ? this.append(".") : {};
-    },
-
-    addZero() {
-      this.current === "0" && this.current.length === 1
-        ? this.current
-        : this.append(0);
+      let current = this.on ? this.right : this.left;
+      current = current === "" ? current = "0" : current;
+      current.indexOf(".") === -1 ? (current = `${current + "."}`) : {};
+      if (this.on) {
+        this.right = current;
+      } else {
+        this.left = current;
+      }
     },
 
     op(operator) {
-      if (this.operator.length === 1) {
-      } else if (this.current != "0") {
-        this.operator = operator;        
-        this.append(operator);
+      if (this.operator.length === 0) {
+        this.operator = operator;
+        this.on = true;
       }
     },
 
     evaluate() {
-      if (this.operator.length === 1) {
-        var nums = this.current.split(this.operator);
-
-        switch (this.operator) {
-          case "+":
-            this.current = `${parseFloat(nums[0]) + parseFloat(nums[1])}`;
-            break;
-          case "-":
-            this.current = `${parseFloat(nums[0]) - parseFloat(nums[1])}`;
-            break;
-          case "÷":
-            this.current = `${parseFloat(nums[0]) / parseFloat(nums[1])}`;
-            break;
-          case "x":
-            this.current = `${parseFloat(nums[0]) * parseFloat(nums[1])}`;
-            break;
-        }
-
-        this.operator = "";
-        this.done = true;
+      let result = "0";
+      switch (this.operator) {
+        case "+":
+          result = `${parseFloat(this.left) + parseFloat(this.right)}`;
+          this.clear(result);
+          break;
+        case "-":
+          result = `${parseFloat(this.left) - parseFloat(this.right)}`;
+          this.clear(result);
+          break;
+        case "x":
+          result = `${parseFloat(this.left) * parseFloat(this.right)}`;
+          this.clear(result);
+          break;
+        case "÷":
+          result = `${parseFloat(this.left) / parseFloat(this.right)}`;
+          this.clear(result);
+          break;
       }
     }
   }
